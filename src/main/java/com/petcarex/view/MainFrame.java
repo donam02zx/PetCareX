@@ -320,6 +320,28 @@ public class MainFrame extends JFrame {
         return card;
     }
     
+//    private JButton createQuickActionButton(String text, String tooltip) {
+//        JButton button = new JButton(text);
+//        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+//        button.setToolTipText(tooltip);
+//        button.setHorizontalAlignment(SwingConstants.CENTER);
+//        button.setBackground(new Color(240, 245, 240));
+//        button.setBorder(BorderFactory.createCompoundBorder(
+//            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+//            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+//        ));
+//        button.setFocusPainted(false);
+//        
+//        button.addActionListener(e -> {
+//            JOptionPane.showMessageDialog(this, 
+//                "Chức năng: " + text + "\nĐang được phát triển...",
+//                "Thông báo",
+//                JOptionPane.INFORMATION_MESSAGE);
+//        });
+//        
+//        return button;
+//    }
+    
     private JButton createQuickActionButton(String text, String tooltip) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -332,11 +354,24 @@ public class MainFrame extends JFrame {
         ));
         button.setFocusPainted(false);
         
+        // Thêm action cho các nút đặt lịch
         button.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, 
-                "Chức năng: " + text + "\nĐang được phát triển...",
-                "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
+            if (text.contains("Đặt lịch khám")) {
+                // Chuyển đến tab Đặt lịch
+                if (tabbedPane.getTabCount() > 0) {
+                    for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                        if (tabbedPane.getTitleAt(i).contains("Đặt lịch")) {
+                            tabbedPane.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Chức năng: " + text + "\nĐang được phát triển...",
+                    "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
         });
         
         return button;
@@ -364,15 +399,31 @@ public class MainFrame extends JFrame {
         JScrollPane scrollPane1 = new JScrollPane(thuCungPanel);
         tabbedPane.addTab("🐶 Thú cưng", null, scrollPane1, "Quản lý thú cưng của tôi");
         
+        // Đặt lịch - THÊM VÀO ĐÂY
+        if (userInfo instanceof KhachHang) {
+            KhachHang kh = (KhachHang) userInfo;
+            DatLichController datLichController = new DatLichController(kh.getMaKH());
+            JPanel datLichPanel = datLichController.getViewPanel();
+            JScrollPane scrollPaneDatLich = new JScrollPane(datLichPanel);
+            tabbedPane.addTab("📅 Đặt lịch", null, scrollPaneDatLich, "Đặt lịch khám/tiêm cho thú cưng");
+            
+            // Thêm tab Lịch sử Điểm
+            JPanel lichSuDiemPanel = new LichSuDiemView(kh.getMaKH()); // ĐÃ SỬA Ở ĐÂY
+            JScrollPane scrollPaneDiem = new JScrollPane(lichSuDiemPanel);
+            tabbedPane.addTab("⭐ Điểm thưởng", null, scrollPaneDiem, "Xem lịch sử tích điểm và sử dụng điểm");
+        }
+        
+      
+        
         // Lịch sử khám
         JPanel lichSuPanel = createLichSuPanel();
         JScrollPane scrollPane2 = new JScrollPane(lichSuPanel);
         tabbedPane.addTab("📋 Lịch sử", null, scrollPane2, "Xem lịch sử khám bệnh");
         
         // Đặt lịch
-        JPanel datLichPanel = createDatLichPanel();
-        JScrollPane scrollPane3 = new JScrollPane(datLichPanel);
-        tabbedPane.addTab("📅 Đặt lịch", null, scrollPane3, "Đặt lịch khám/tiêm");
+//        JPanel datLichPanel = createDatLichPanel();
+//        JScrollPane scrollPane3 = new JScrollPane(datLichPanel);
+//        tabbedPane.addTab("📅 Đặt lịch", null, scrollPane3, "Đặt lịch khám/tiêm");
         
         // Mua hàng
         JPanel muaHangPanel = createMuaHangPanel();
@@ -391,15 +442,27 @@ public class MainFrame extends JFrame {
         JScrollPane scrollPane2 = new JScrollPane(thuCungPanel);
         tabbedPane.addTab("🐕 Thú cưng", null, scrollPane2, "Quản lý thú cưng");
         
+        // Quản lý lịch hẹn - THÊM VÀO ĐÂY
+        QuanLyLichHenController qlLichHenController = new QuanLyLichHenController();
+        JPanel quanLyLichHenPanel = qlLichHenController.getViewPanel();
+        JScrollPane scrollPaneLichHen = new JScrollPane(quanLyLichHenPanel);
+        tabbedPane.addTab("📅 Lịch hẹn", null, scrollPaneLichHen, "Quản lý lịch hẹn của khách hàng");
+        
+        // Thêm tab Thanh toán
+        ThanhToanController thanhToanController = new ThanhToanController();
+        JPanel thanhToanPanel = thanhToanController.getViewPanel();
+        JScrollPane scrollPaneThanhToan = new JScrollPane(thanhToanPanel);
+        tabbedPane.addTab("💳 Thanh toán", null, scrollPaneThanhToan, "Xử lý thanh toán hóa đơn");
+        
         // Bán hàng
         JPanel banHangPanel = createBanHangPanel();
         JScrollPane scrollPane3 = new JScrollPane(banHangPanel);
         tabbedPane.addTab("💰 Bán hàng", null, scrollPane3, "Bán sản phẩm & dịch vụ");
         
         // Quản lý cuộc hẹn
-        JPanel appointmentPanel = createAppointmentPanel();
-        JScrollPane scrollPane4 = new JScrollPane(appointmentPanel);
-        tabbedPane.addTab("📅 Cuộc hẹn", null, scrollPane4, "Quản lý lịch hẹn");
+//        JPanel appointmentPanel = createAppointmentPanel();
+//        JScrollPane scrollPane4 = new JScrollPane(appointmentPanel);
+//        tabbedPane.addTab("📅 Cuộc hẹn", null, scrollPane4, "Quản lý lịch hẹn");
     }
     
     private void setupBacSiTabs() {

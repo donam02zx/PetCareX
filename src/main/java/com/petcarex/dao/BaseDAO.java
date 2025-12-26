@@ -9,10 +9,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class BaseDAO<T> {
-    protected Connection connection;
+    // KHÔNG lưu connection ở đây
+    // private Connection connection; // XÓA DÒNG NÀY
     
     public BaseDAO() {
-        this.connection = DatabaseConnection.getInstance().getConnection();
+        // Constructor không làm gì cả
+    }
+    
+    // Phương thức lấy connection mới mỗi lần cần
+    protected Connection getConnection() throws SQLException {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        if (conn == null || conn.isClosed()) {
+            throw new SQLException("Không thể thiết lập kết nối database");
+        }
+        return conn;
     }
     
     // CRUD operations
@@ -22,26 +32,39 @@ public abstract class BaseDAO<T> {
     public abstract void delete(int id) throws SQLException;
     public abstract List<T> findAll() throws SQLException;
     
-    // Common methods
+    // Common methods - SỬA LẠI: luôn lấy connection mới
     protected void executeUpdate(String sql, Object... params) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        
+        try {
+            conn = getConnection(); // Lấy connection mới
+            stmt = conn.prepareStatement(sql);
             setParameters(stmt, params);
             stmt.executeUpdate();
+        } finally {
+            closeResources(null, stmt, conn);
         }
     }
     
     protected List<T> executeQuery(String sql, ResultSetMapper<T> mapper, Object... params) 
             throws SQLException {
         List<T> resultList = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try {
+            conn = getConnection(); // Lấy connection mới
+            stmt = conn.prepareStatement(sql);
             setParameters(stmt, params);
             
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    resultList.add(mapper.map(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                resultList.add(mapper.map(rs));
             }
+        } finally {
+            closeResources(rs, stmt, conn);
         }
         
         return resultList;
@@ -49,14 +72,21 @@ public abstract class BaseDAO<T> {
     
     protected T executeQuerySingle(String sql, ResultSetMapper<T> mapper, Object... params) 
             throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = getConnection(); // Lấy connection mới
+            stmt = conn.prepareStatement(sql);
             setParameters(stmt, params);
             
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapper.map(rs);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapper.map(rs);
             }
+        } finally {
+            closeResources(rs, stmt, conn);
         }
         
         return null;
@@ -67,6 +97,28 @@ public abstract class BaseDAO<T> {
         for (int i = 0; i < params.length; i++) {
             stmt.setObject(i + 1, params[i]);
         }
+    }
+    
+    // Phương thức đóng tài nguyên
+    protected void closeResources(ResultSet rs, PreparedStatement stmt, Connection conn) {
+        try {
+            if (rs != null && !rs.isClosed()) {
+                rs.close();
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi đóng ResultSet: " + e.getMessage());
+        }
+        
+        try {
+            if (stmt != null && !stmt.isClosed()) {
+                stmt.close();
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi đóng Statement: " + e.getMessage());
+        }
+        
+        // KHÔNG đóng connection ở đây!
+        // Connection được quản lý bởi DatabaseConnection
     }
     
     // Interface for mapping ResultSet to object
