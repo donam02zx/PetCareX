@@ -133,13 +133,17 @@ public class LichHenDAO extends BaseDAO<LichHen> {
     	           "kh.HoTen AS TenChu, " + // THÊM DÒNG NÀY
     	           "cn.TenChiNhanh, " +
     	           "nv.HoTen AS TenBacSi, " +
-    	           "dv.TenDichVu " +
+    	           "dv.TenDichVu, " +
+    	           "hd.MaHoaDon, " +
+    	           "hd.TrangThai AS TrangThaiHoaDon, " +  // Lấy từ bảng HOA_DON
+    	           "hd.TongTien AS TongTienHoaDon " +     // Thêm tổng tiền hóa đơn nếu cần
     	           "FROM LICH_HEN lh " +
     	           "LEFT JOIN THU_CUNG tc ON lh.MaThuCung = tc.MaThuCung " +
     	           "LEFT JOIN KHACH_HANG kh ON tc.MaKH = kh.MaKH " + // THÊM JOIN NÀY
     	           "LEFT JOIN CHI_NHANH cn ON lh.MaChiNhanh = cn.MaChiNhanh " +
     	           "LEFT JOIN NHAN_VIEN nv ON lh.MaBacSi = nv.MaNV " +
-    	           "LEFT JOIN DICH_VU dv ON lh.MaDichVu = dv.MaDichVu";
+    	           "LEFT JOIN DICH_VU dv ON lh.MaDichVu = dv.MaDichVu "+
+    	 		   "LEFT JOIN HOA_DON hd ON lh.MaHoaDon = hd.MaHoaDon"; // THÊM JOIN
     }
     
     // Map ResultSet (with joins)
@@ -182,6 +186,369 @@ public class LichHenDAO extends BaseDAO<LichHen> {
         lh.setTenDichVu(rs.getString("TenDichVu"));
         lh.setTenChu(rs.getString("TenChu"));
         
+        // Thêm mapping cho hóa đơn
+        Integer maHoaDon = rs.getInt("MaHoaDon");
+        if (!rs.wasNull()) {
+            lh.setMaHoaDon(maHoaDon);
+        }
+        
+        lh.setTrangThaiHoaDon(rs.getString("TrangThaiHoaDon"));
+        
         return lh;
+    }
+    
+//    public int taoHoaDonTuLichHen(int maLichHen) throws SQLException {
+//        // Lấy thông tin lịch hẹn
+//        String sqlSelect = "SELECT lh.*, tc.MaKH, dv.GiaCoBan AS GiaDichVu " +
+//                          "FROM LICH_HEN lh " +
+//                          "LEFT JOIN THU_CUNG tc ON lh.MaThuCung = tc.MaThuCung " +
+//                          "LEFT JOIN DICH_VU dv ON lh.MaDichVu = dv.MaDichVu " +
+//                          "WHERE lh.MaLichHen = ?";
+//        
+//        Connection conn = null;
+//        PreparedStatement stmt = null;
+//        ResultSet rs = null;
+//        
+//        try {
+//            conn = getConnection();
+//            
+//            // Lấy thông tin lịch hẹn
+//            stmt = conn.prepareStatement(sqlSelect);
+//            stmt.setInt(1, maLichHen);
+//            rs = stmt.executeQuery();
+//            
+//            if (!rs.next()) {
+//                throw new SQLException("Không tìm thấy lịch hẹn");
+//            }
+//            
+//            int maKH = rs.getInt("MaKH");
+//            int maBacSi = rs.getInt("MaBacSi");
+//            int maDichVu = rs.getInt("MaDichVu");
+//            int maChiNhanh = rs.getInt("MaChiNhanh");
+//            double giaDichVu = rs.getDouble("GiaDichVu");
+//            
+//            // Tính giá dựa trên loại lịch hẹn
+//            double tongTien = tinhTienDichVu(rs.getString("LoaiLichHen"), giaDichVu);
+//            
+//            // Tạo hóa đơn
+//            String sqlInsert = "INSERT INTO HOA_DON (MaKH, MaNV, MaChiNhanh, NgayLap, " +
+//                             "TongTienHang, TongTien, TrangThai, GhiChuLichHen) " +
+//                             "VALUES (?, ?, ?, NOW(), ?, ?, 'Chưa thanh toán', CONCAT('Từ lịch hẹn #', ?))";
+//            
+//            stmt = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS);
+//            stmt.setInt(1, maKH);
+//            stmt.setInt(2, maBacSi != 0 ? maBacSi : 1); // Nếu không có bác sĩ, dùng NV mặc định
+//            stmt.setInt(3, maChiNhanh);
+//            stmt.setDouble(4, tongTien);
+//            stmt.setDouble(5, tongTien);
+//            stmt.setInt(6, maLichHen);
+//            
+//            stmt.executeUpdate();
+//            
+//            // Lấy ID hóa đơn vừa tạo
+//            rs = stmt.getGeneratedKeys();
+//            if (rs.next()) {
+//                int maHoaDon = rs.getInt(1);
+//                
+//                // Cập nhật lịch hẹn với mã hóa đơn (thêm cột MaHoaDon vào bảng LICH_HEN nếu chưa có)
+//                // Hoặc tạo bảng liên kết LICH_HEN_HOA_DON
+//                return maHoaDon;
+//            }
+//            
+//            throw new SQLException("Không thể tạo hóa đơn");
+//            
+//        } finally {
+//            closeResources(rs, stmt, conn);
+//        }
+//    }
+    
+//    public int taoHoaDonTuLichHen(int maLichHen) throws SQLException {
+//        Connection conn = null;
+//        PreparedStatement stmt = null;
+//        ResultSet rs = null;
+//        
+//        try {
+//            conn = getConnection();
+//            
+//            // 1. Lấy thông tin lịch hẹn và khách hàng
+//            String sqlSelect = "SELECT lh.*, tc.MaKH, tc.TenThuCung, " +
+//                              "dv.GiaCoBan AS GiaDichVu " +  // Sửa thành GiaCoBan
+//                              "FROM LICH_HEN lh " +
+//                              "LEFT JOIN THU_CUNG tc ON lh.MaThuCung = tc.MaThuCung " +
+//                              "LEFT JOIN DICH_VU dv ON lh.MaDichVu = dv.MaDichVu " +
+//                              "WHERE lh.MaLichHen = ?";
+//            
+//            stmt = conn.prepareStatement(sqlSelect);
+//            stmt.setInt(1, maLichHen);
+//            rs = stmt.executeQuery();
+//            
+//            if (!rs.next()) {
+//                throw new SQLException("Không tìm thấy lịch hẹn");
+//            }
+//            
+//            int maKH = rs.getInt("MaKH");
+//            int maBacSi = rs.getInt("MaBacSi");
+//            int maDichVu = rs.getInt("MaDichVu");
+//            int maChiNhanh = rs.getInt("MaChiNhanh");
+//            String loaiLichHen = rs.getString("LoaiLichHen");
+//            String tenThuCung = rs.getString("TenThuCung");
+//            String ghiChu = rs.getString("GhiChu");
+//            double giaDichVu = rs.getDouble("GiaDichVu");
+//            
+//            // 2. Tính tổng tiền
+//            double tongTien = tinhTienDichVu(loaiLichHen, giaDichVu);
+//            
+//            // 3. Tạo hóa đơn
+//            String sqlInsert = "INSERT INTO HOA_DON (MaKH, MaNV, MaChiNhanh, NgayLap, " +
+//                             "TongTienHang, TongTien, TrangThai, GhiChu) " +
+//                             "VALUES (?, ?, ?, NOW(), ?, ?, 'Chưa thanh toán', ?)";
+//            
+//            stmt = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS);
+//            stmt.setInt(1, maKH);
+//            stmt.setInt(2, maBacSi != 0 ? maBacSi : 1); // Dùng bác sĩ hoặc NV mặc định
+//            stmt.setInt(3, maChiNhanh);
+//            stmt.setDouble(4, tongTien);
+//            stmt.setDouble(5, tongTien);
+//            
+//            String ghiChuHoaDon = String.format("Tạo từ lịch hẹn #%d - Thú cưng: %s", 
+//                                               maLichHen, tenThuCung);
+//            if (ghiChu != null && !ghiChu.isEmpty()) {
+//                ghiChuHoaDon += " - Ghi chú: " + ghiChu;
+//            }
+//            stmt.setString(6, ghiChuHoaDon);
+//            
+//            int affectedRows = stmt.executeUpdate();
+//            if (affectedRows == 0) {
+//                throw new SQLException("Tạo hóa đơn thất bại");
+//            }
+//            
+//            // 4. Lấy mã hóa đơn vừa tạo
+//            rs = stmt.getGeneratedKeys();
+//            if (rs.next()) {
+//                int maHoaDon = rs.getInt(1);
+//                
+//                // 5. Cập nhật mã hóa đơn vào lịch hẹn
+//                String sqlUpdate = "UPDATE LICH_HEN SET MaHoaDon = ? WHERE MaLichHen = ?";
+//                stmt = conn.prepareStatement(sqlUpdate);
+//                stmt.setInt(1, maHoaDon);
+//                stmt.setInt(2, maLichHen);
+//                stmt.executeUpdate();
+//                
+//                // 6. Ghi log
+//                System.out.println("Đã tạo hóa đơn #" + maHoaDon + 
+//                                 " từ lịch hẹn #" + maLichHen + 
+//                                 " - Tổng tiền: " + String.format("%,.0f", tongTien) + " VND");
+//                
+//                return maHoaDon;
+//            }
+//            
+//            throw new SQLException("Không thể lấy mã hóa đơn");
+//            
+//        } finally {
+//            closeResources(rs, stmt, conn);
+//        }
+//    }
+    
+    public int taoHoaDonTuLichHen(int maLichHen) throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = getConnection();
+            
+            // CÁCH 1: Query đơn giản hơn, chỉ lấy thông tin cần thiết
+            String sqlSelect = "SELECT " +
+                              "lh.MaLichHen, lh.MaThuCung, lh.MaBacSi, lh.MaDichVu, " +
+                              "lh.MaChiNhanh, lh.LoaiLichHen, lh.GhiChu, " +
+                              "tc.MaKH, tc.TenThuCung, " +
+                              "CASE WHEN dv.GiaCoBan IS NULL THEN 0 ELSE dv.GiaCoBan END AS GiaDichVu " +
+                              "FROM LICH_HEN lh " +
+                              "LEFT JOIN THU_CUNG tc ON lh.MaThuCung = tc.MaThuCung " +
+                              "LEFT JOIN DICH_VU dv ON lh.MaDichVu = dv.MaDichVu " +
+                              "WHERE lh.MaLichHen = ?";
+            
+            stmt = conn.prepareStatement(sqlSelect);
+            stmt.setInt(1, maLichHen);
+            rs = stmt.executeQuery();
+            
+            if (!rs.next()) {
+                throw new SQLException("Không tìm thấy lịch hẹn #" + maLichHen);
+            }
+            
+            int maKH = rs.getInt("MaKH");
+            int maBacSi = rs.getInt("MaBacSi");
+            int maDichVu = rs.getInt("MaDichVu");
+            int maChiNhanh = rs.getInt("MaChiNhanh");
+            String loaiLichHen = rs.getString("LoaiLichHen");
+            String tenThuCung = rs.getString("TenThuCung");
+            String ghiChu = rs.getString("GhiChu");
+            double giaDichVu = rs.getDouble("GiaDichVu");
+            
+            // Debug
+            System.out.println("=== DEBUG TẠO HÓA ĐƠN ===");
+            System.out.println("MaLichHen: " + maLichHen);
+            System.out.println("MaKH: " + maKH);
+            System.out.println("MaDichVu: " + maDichVu);
+            System.out.println("GiaDichVu: " + giaDichVu);
+            System.out.println("LoaiLichHen: " + loaiLichHen);
+            
+            // 2. Tính tổng tiền
+            double tongTien = tinhTienDichVu(loaiLichHen, giaDichVu);
+            System.out.println("TongTien: " + tongTien);
+            
+            // 3. Kiểm tra dữ liệu hợp lệ
+            if (maKH <= 0) {
+                throw new SQLException("Không tìm thấy khách hàng cho lịch hẹn này");
+            }
+            
+            // 4. Tạo hóa đơn
+            String sqlInsert = "INSERT INTO HOA_DON (MaKH, MaNV, MaChiNhanh, NgayLap, " +
+                             "TongTienHang, TongTien, TrangThai) " +
+                             "VALUES (?, ?, ?, NOW(), ?, ?, 'Chưa thanh toán')";
+            
+            stmt = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS);
+            stmt.setInt(1, maKH);
+            stmt.setInt(2, maBacSi != 0 ? maBacSi : 1);
+            stmt.setInt(3, maChiNhanh);
+            stmt.setDouble(4, tongTien);
+            stmt.setDouble(5, tongTien);
+            
+            String ghiChuHoaDon = String.format("Tạo từ lịch hẹn #%d - Thú cưng: %s", 
+                                               maLichHen, tenThuCung);
+            if (ghiChu != null && !ghiChu.isEmpty()) {
+                ghiChuHoaDon += " - Ghi chú: " + ghiChu;
+            }
+            stmt.setString(6, ghiChuHoaDon);
+            
+            System.out.println("Executing INSERT...");
+            int affectedRows = stmt.executeUpdate();
+            System.out.println("Affected rows: " + affectedRows);
+            
+            if (affectedRows == 0) {
+                throw new SQLException("Tạo hóa đơn thất bại");
+            }
+            
+            // 5. Lấy mã hóa đơn vừa tạo
+            rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                int maHoaDon = rs.getInt(1);
+                System.out.println("Created MaHoaDon: " + maHoaDon);
+                
+                // 6. Cập nhật mã hóa đơn vào lịch hẹn
+                String sqlUpdate = "UPDATE LICH_HEN SET MaHoaDon = ? WHERE MaLichHen = ?";
+                stmt = conn.prepareStatement(sqlUpdate);
+                stmt.setInt(1, maHoaDon);
+                stmt.setInt(2, maLichHen);
+                stmt.executeUpdate();
+                
+                System.out.println("SUCCESS: Đã tạo hóa đơn #" + maHoaDon + 
+                                 " từ lịch hẹn #" + maLichHen + 
+                                 " - Tổng tiền: " + String.format("%,.0f", tongTien) + " VND");
+                
+                return maHoaDon;
+            }
+            
+            throw new SQLException("Không thể lấy mã hóa đơn");
+            
+        } catch (SQLException e) {
+            System.err.println("ERROR trong taoHoaDonTuLichHen: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            throw e;
+        } finally {
+            closeResources(rs, stmt, conn);
+        }
+    }
+    
+    public int taoHoaDonDonGian(int maLichHen) throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = getConnection();
+            
+            // CHỈ lấy thông tin cơ bản, không join với DICH_VU
+            String sqlSelect = "SELECT lh.MaLichHen, lh.MaThuCung, lh.MaBacSi, " +
+                              "lh.MaChiNhanh, lh.LoaiLichHen, lh.GhiChu, tc.MaKH, tc.TenThuCung " +
+                              "FROM LICH_HEN lh " +
+                              "LEFT JOIN THU_CUNG tc ON lh.MaThuCung = tc.MaThuCung " +
+                              "WHERE lh.MaLichHen = ?";
+            
+            stmt = conn.prepareStatement(sqlSelect);
+            stmt.setInt(1, maLichHen);
+            rs = stmt.executeQuery();
+            
+            if (!rs.next()) {
+                throw new SQLException("Không tìm thấy lịch hẹn");
+            }
+            
+            int maKH = rs.getInt("MaKH");
+            int maBacSi = rs.getInt("MaBacSi");
+            int maChiNhanh = rs.getInt("MaChiNhanh");
+            String loaiLichHen = rs.getString("LoaiLichHen");
+            String tenThuCung = rs.getString("TenThuCung");
+            String ghiChu = rs.getString("GhiChu");
+            
+            // Chỉ dùng giá mặc định theo loại lịch hẹn
+            double tongTien = tinhTienDichVu(loaiLichHen, 0);
+            
+            // Tạo hóa đơn
+            String sqlInsert = "INSERT INTO HOA_DON (MaKH, MaNV, MaChiNhanh, NgayLap, " +
+                             "TongTienHang, TongTien, TrangThai) " +
+                             "VALUES (?, ?, ?, NOW(), ?, ?, 'Chưa thanh toán')";
+            
+            stmt = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS);
+            stmt.setInt(1, maKH);
+            stmt.setInt(2, maBacSi != 0 ? maBacSi : 1);
+            stmt.setInt(3, maChiNhanh);
+            stmt.setDouble(4, tongTien);
+            stmt.setDouble(5, tongTien);
+            
+            String ghiChuHoaDon = "Tạo từ lịch hẹn #" + maLichHen + " - Thú cưng: " + tenThuCung;
+            stmt.setString(6, ghiChuHoaDon);
+            
+            stmt.executeUpdate();
+            
+            rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                int maHoaDon = rs.getInt(1);
+                
+                // Cập nhật lịch hẹn
+                String sqlUpdate = "UPDATE LICH_HEN SET MaHoaDon = ? WHERE MaLichHen = ?";
+                stmt = conn.prepareStatement(sqlUpdate);
+                stmt.setInt(1, maHoaDon);
+                stmt.setInt(2, maLichHen);
+                stmt.executeUpdate();
+                
+                return maHoaDon;
+            }
+            
+            return -1;
+            
+        } finally {
+            closeResources(rs, stmt, conn);
+        }
+    }
+    
+    
+
+    private double tinhTienDichVu(String loaiLichHen, double giaDichVu) {
+        if (giaDichVu > 0) {
+            return giaDichVu;
+        }
+        
+        // Giá mặc định theo loại lịch hẹn
+        switch (loaiLichHen) {
+            case "Khám bệnh":
+                return 150000;
+            case "Tiêm phòng":
+                return 350000;
+            case "Spa & Grooming":
+                return 200000;
+            default:
+                return 250000;
+        }
     }
 }

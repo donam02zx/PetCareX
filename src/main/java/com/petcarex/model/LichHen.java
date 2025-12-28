@@ -14,6 +14,9 @@ public class LichHen {
     private String trangThai; // "Chờ xác nhận", "Đã xác nhận", "Đã hoàn thành", "Đã hủy"
     private String ghiChu;
     private LocalDateTime ngayTao;
+    private Integer maHoaDon; // Thêm field này
+    private String trangThaiHoaDon; // Thêm field này
+    private Double tongTienHoaDon;  
     
     // Thông tin thêm (cho hiển thị)
     private String tenThuCung;
@@ -37,6 +40,15 @@ public class LichHen {
     }
     
     // Getters and Setters
+    public Integer getMaHoaDon() { return maHoaDon; }
+    public void setMaHoaDon(Integer maHoaDon) { this.maHoaDon = maHoaDon; }
+    
+    public String getTrangThaiHoaDon() { return trangThaiHoaDon; }
+    public void setTrangThaiHoaDon(String trangThaiHoaDon) { this.trangThaiHoaDon = trangThaiHoaDon; }
+    
+    public Double getTongTienHoaDon() { return tongTienHoaDon; }
+    public void setTongTienHoaDon(Double tongTienHoaDon) { this.tongTienHoaDon = tongTienHoaDon; }
+    
     public String getTenChu() { return tenChu; }
     public void setTenChu(String tenChu) { this.tenChu = tenChu; }
     

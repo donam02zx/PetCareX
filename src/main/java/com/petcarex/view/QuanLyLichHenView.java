@@ -165,7 +165,7 @@ public class QuanLyLichHenView extends JPanel {
     
     String[] columns = {
     	    "Mã LH", "Thú cưng", "Chủ", "Loại", "Thời gian", 
-    	    "Chi nhánh", "Bác sĩ", "Dịch vụ", "Trạng thái", "Ghi chú"
+    	    "Chi nhánh", "Bác sĩ", "Dịch vụ", "Trạng thái",  "Mã HĐ", "Trạng thái HĐ", "Ghi chú"
     	};
     
     
@@ -186,6 +186,8 @@ public class QuanLyLichHenView extends JPanel {
                     		  lh.getTenBacSi() != null ? lh.getTenBacSi() : "Chưa chọn",
                     		  lh.getTenDichVu() != null ? lh.getTenDichVu() : "Chưa chọn",
                     		  lh.getTrangThai(),
+                    		  lh.getMaHoaDon() != null ? lh.getMaHoaDon() : "",  // Thông tin hóa đơn
+                              lh.getTrangThaiHoaDon() != null ? lh.getTrangThaiHoaDon() : "", // Trạng thái hóa đơn
                     		  lh.getGhiChu() != null ? lh.getGhiChu() : ""
                     };
                     tableModel.addRow(row);
@@ -618,30 +620,76 @@ public class QuanLyLichHenView extends JPanel {
     }
     
     // Custom cell renderer for status column
+//    private class StatusCellRenderer extends DefaultTableCellRenderer {
+//        @Override
+//        public Component getTableCellRendererComponent(JTable table, Object value,
+//                boolean isSelected, boolean hasFocus, int row, int column) {
+//            Component c = super.getTableCellRendererComponent(table, value, 
+//                isSelected, hasFocus, row, column);
+//            
+//            String status = (String) value;
+//            
+//            if (isSelected) {
+//                c.setBackground(table.getSelectionBackground());
+//                c.setForeground(table.getSelectionForeground());
+//            } else {
+//                switch (status) {
+//                    case "Chờ xác nhận":
+//                        c.setForeground(new Color(255, 140, 0)); // Orange
+//                        c.setBackground(new Color(255, 248, 225));
+//                        break;
+//                    case "Đã xác nhận":
+//                        c.setForeground(new Color(0, 100, 255)); // Blue
+//                        c.setBackground(new Color(225, 235, 255));
+//                        break;
+//                    case "Đã hoàn thành":
+//                        c.setForeground(new Color(0, 128, 0)); // Green
+//                        c.setBackground(new Color(225, 255, 225));
+//                        break;
+//                    case "Đã hủy":
+//                        c.setForeground(Color.RED);
+//                        c.setBackground(new Color(255, 225, 225));
+//                        break;
+//                    default:
+//                        c.setForeground(table.getForeground());
+//                        c.setBackground(table.getBackground());
+//                }
+//            }
+//            
+//            setFont(new Font("Segoe UI", Font.BOLD, 12));
+//            setHorizontalAlignment(SwingConstants.CENTER);
+//            setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+//            
+//            return c;
+//        }
+//    }
     private class StatusCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, 
+            
+            // Luôn gọi super với value là String
+            String displayValue = "";
+            if (value != null) {
+                displayValue = value.toString();
+            }
+            
+            Component c = super.getTableCellRendererComponent(table, displayValue, 
                 isSelected, hasFocus, row, column);
             
-            String status = (String) value;
-            
-            if (isSelected) {
-                c.setBackground(table.getSelectionBackground());
-                c.setForeground(table.getSelectionForeground());
-            } else {
-                switch (status) {
+            // Xử lý màu dựa trên displayValue (đã là String)
+            if (!isSelected) {
+                switch (displayValue) {
                     case "Chờ xác nhận":
-                        c.setForeground(new Color(255, 140, 0)); // Orange
+                        c.setForeground(new Color(255, 140, 0));
                         c.setBackground(new Color(255, 248, 225));
                         break;
                     case "Đã xác nhận":
-                        c.setForeground(new Color(0, 100, 255)); // Blue
+                        c.setForeground(new Color(0, 100, 255));
                         c.setBackground(new Color(225, 235, 255));
                         break;
                     case "Đã hoàn thành":
-                        c.setForeground(new Color(0, 128, 0)); // Green
+                        c.setForeground(new Color(0, 128, 0));
                         c.setBackground(new Color(225, 255, 225));
                         break;
                     case "Đã hủy":

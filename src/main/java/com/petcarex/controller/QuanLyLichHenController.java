@@ -8,6 +8,7 @@ import com.petcarex.service.NhanVienService;
 import com.petcarex.model.LichHen;
 import com.petcarex.model.ThuCung;
 import com.petcarex.model.DichVu;
+import com.petcarex.model.HoaDon;
 import com.petcarex.model.NhanVien;
 import com.petcarex.view.QuanLyLichHenView;
 import javax.swing.*;
@@ -123,12 +124,32 @@ public class QuanLyLichHenController {
     }
     
     // Đánh dấu hoàn thành
+//    public boolean hoanThanhLichHen(int maLichHen) {
+//        try {
+//            lichHenService.hoanThanhLichHen(maLichHen);
+//            view.showSuccess("Đánh dấu hoàn thành thành công!");
+//            view.refreshTable();
+//            return true;
+//        } catch (Exception e) {
+//            showError("Lỗi khi đánh dấu hoàn thành: " + e.getMessage());
+//            return false;
+//        }
+//    }
     public boolean hoanThanhLichHen(int maLichHen) {
         try {
-            lichHenService.hoanThanhLichHen(maLichHen);
-            view.showSuccess("Đánh dấu hoàn thành thành công!");
-            view.refreshTable();
-            return true;
+            // Sử dụng method mới để vừa hoàn thành lịch vừa tạo hóa đơn
+            HoaDon hoaDon = lichHenService.hoanThanhLichHenVaTaoHoaDon(maLichHen);
+            
+            if (hoaDon != null) {
+                view.showSuccess("Đánh dấu hoàn thành thành công!\n" +
+                               "Đã tạo hóa đơn #" + hoaDon.getMaHoaDon() + 
+                               "\nTổng tiền: " + String.format("%,.0f", hoaDon.getTongTien()) + " VND");
+                view.refreshTable();
+                return true;
+            } else {
+                view.showError("Không thể tạo hóa đơn từ lịch hẹn");
+                return false;
+            }
         } catch (Exception e) {
             showError("Lỗi khi đánh dấu hoàn thành: " + e.getMessage());
             return false;

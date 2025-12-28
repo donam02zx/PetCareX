@@ -5,10 +5,13 @@ import com.petcarex.dao.LichHenDAO;
 import com.petcarex.dao.ThuCungDAO;
 import com.petcarex.dao.NhanVienDAO;
 import com.petcarex.dao.DichVuDAO;
+import com.petcarex.dao.HoaDonDAO;
 import com.petcarex.model.LichHen;
 import com.petcarex.model.ThuCung;
 import com.petcarex.model.NhanVien;
 import com.petcarex.model.DichVu;
+import com.petcarex.model.HoaDon;
+
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -84,8 +87,70 @@ public class LichHenService {
         lichHenDAO.confirmAppointment(maLichHen);
     }
     
-    public void hoanThanhLichHen(int maLichHen) throws SQLException {
+//    public void hoanThanhLichHen(int maLichHen) throws SQLException {
+//        lichHenDAO.completeAppointment(maLichHen);
+//    }
+//    public void hoanThanhLichHen(int maLichHen) throws SQLException {
+//        // 1. Cập nhật trạng thái lịch hẹn
+//        lichHenDAO.completeAppointment(maLichHen);
+//        
+//        // 2. Tạo hóa đơn từ lịch hẹn
+//        int maHoaDon = lichHenDAO.taoHoaDonTuLichHen(maLichHen);
+//        
+//        System.out.println("Đã tạo hóa đơn #" + maHoaDon + " từ lịch hẹn #" + maLichHen);
+//        
+//        // 3. Có thể gửi thông báo hoặc thực hiện các xử lý khác
+//    }
+
+ // Hoặc viết lại method hoàn thành để tách biệt
+//    public HoaDon hoanThanhLichHenVaTaoHoaDon(int maLichHen) throws SQLException {
+//        // 1. Cập nhật trạng thái lịch hẹn
+//        lichHenDAO.completeAppointment(maLichHen);
+//        
+//        // 2. Tạo hóa đơn từ lịch hẹn
+//        int maHoaDon = lichHenDAO.taoHoaDonTuLichHen(maLichHen);
+//        
+//        // 3. Lấy thông tin hóa đơn vừa tạo (cần thêm HoaDonDAO)
+//        HoaDonService hoaDonService = new HoaDonService();
+//        return hoaDonService.timHoaDon(maHoaDon);
+//    }
+    
+    public HoaDon hoanThanhLichHenVaTaoHoaDon(int maLichHen) throws SQLException {
+        // 1. Cập nhật trạng thái lịch hẹn
         lichHenDAO.completeAppointment(maLichHen);
+        
+        // 2. Tạo hóa đơn từ lịch hẹn
+        int maHoaDon = lichHenDAO.taoHoaDonTuLichHen(maLichHen);
+        
+        if (maHoaDon <= 0) {
+            throw new SQLException("Không thể tạo hóa đơn từ lịch hẹn");
+        }
+        
+        // 3. Lấy thông tin hóa đơn vừa tạo
+        HoaDonDAO hoaDonDAO = new HoaDonDAO();
+        return hoaDonDAO.read(maHoaDon);
+    }
+    
+    public void hoanThanhLichHen(int maLichHen) throws SQLException {
+        try {
+            // 1. Cập nhật trạng thái lịch hẹn
+            lichHenDAO.completeAppointment(maLichHen);
+            
+            // 2. Tạo hóa đơn từ lịch hẹn
+            int maHoaDon = lichHenDAO.taoHoaDonDonGian(maLichHen); // Dùng method đơn giản
+            
+            if (maHoaDon > 0) {
+                System.out.println("Đã tạo hóa đơn #" + maHoaDon + " từ lịch hẹn #" + maLichHen);
+            } else {
+                System.out.println("Cảnh báo: Không thể tạo hóa đơn từ lịch hẹn #" + maLichHen);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Lỗi khi hoàn thành lịch hẹn: " + e.getMessage());
+            // Vẫn cập nhật trạng thái lịch hẹn dù có lỗi tạo hóa đơn
+            lichHenDAO.completeAppointment(maLichHen);
+            throw new SQLException("Đã cập nhật trạng thái lịch hẹn nhưng không thể tạo hóa đơn: " + e.getMessage());
+        }
     }
     
 //    public void xoaLichHen(int maLichHen) throws SQLException {
