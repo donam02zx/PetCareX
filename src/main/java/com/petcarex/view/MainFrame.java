@@ -8,7 +8,9 @@ import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
+@SuppressWarnings({"unused", "FieldMayBeFinal"})
 public class MainFrame extends JFrame {
     private String userRole;
     private Object userInfo;
@@ -243,12 +245,16 @@ public class MainFrame extends JFrame {
         statsPanel.setBackground(new Color(245, 247, 250));
         statsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        // Create stat cards
-        statsPanel.add(createStatCard("📋 Tổng lượt khám", "12", "Lần", new Color(66, 133, 244)));
-        statsPanel.add(createStatCard("💊 Mũi tiêm", "8", "Mũi", new Color(219, 68, 55)));
-        statsPanel.add(createStatCard("💰 Tổng chi tiêu", "2,450,000", "VND", new Color(244, 180, 0)));
-        statsPanel.add(createStatCard("⭐ Điểm thưởng", "150", "Điểm", new Color(15, 157, 88)));
+
+        NhanVien nv = (NhanVien) userInfo;
+        int maNV = nv.getMaNV();
+        StatBSController controller = new StatBSController();
+        Map<String, String> stats = controller.getStatsByDoctor(maNV);
+
+        statsPanel.add(createStatCard("📋 Tổng lượt khám", stats.get("appointments"), "Lần", new Color(66, 133, 244)));
+        statsPanel.add(createStatCard("💊 Mũi tiêm", stats.get("injections"), "Mũi", new Color(219, 68, 55)));
+        statsPanel.add(createStatCard("💰 Tổng chi tiêu", stats.get("expenses"), "VND", new Color(244, 180, 0)));
+
         
         // Quick actions panel
         JPanel quickActionsPanel = new JPanel();
@@ -286,7 +292,7 @@ public class MainFrame extends JFrame {
         
         return mainPanel;
     }
-    
+
     private JPanel createStatCard(String title, String value, String unit, Color color) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
@@ -464,22 +470,13 @@ public class MainFrame extends JFrame {
 //        JScrollPane scrollPane4 = new JScrollPane(appointmentPanel);
 //        tabbedPane.addTab("📅 Cuộc hẹn", null, scrollPane4, "Quản lý lịch hẹn");
     }
-    
+
     private void setupBacSiTabs() {
-        // Khám bệnh
-        JPanel khamBenhPanel = createKhamBenhPanel();
-        JScrollPane scrollPane1 = new JScrollPane(khamBenhPanel);
-        tabbedPane.addTab("🏥 Khám bệnh", null, scrollPane1, "Khám và chẩn đoán");
-        
-        // Tiêm phòng
-        JPanel tiemPhongPanel = createTiemPhongPanel();
-        JScrollPane scrollPane2 = new JScrollPane(tiemPhongPanel);
-        tabbedPane.addTab("💉 Tiêm phòng", null, scrollPane2, "Tiêm phòng cho thú cưng");
-        
-        // Hồ sơ thú cưng
-        JPanel hoSoPanel = createHoSoPanel();
-        JScrollPane scrollPane3 = new JScrollPane(hoSoPanel);
-        tabbedPane.addTab("📁 Hồ sơ", null, scrollPane3, "Xem hồ sơ thú cưng");
+        NhanVien nv = (NhanVien) userInfo;
+        int maNV = nv.getMaNV();
+        int maChiNhanh = nv.getMaChiNhanh();
+        BacSiPanel bacSiPanel = new BacSiPanel(maNV,maChiNhanh);
+        tabbedPane.addTab("📊 Thống kê bác sĩ", bacSiPanel);
     }
     
     private void setupQuanLyTabs() {
@@ -531,7 +528,7 @@ public class MainFrame extends JFrame {
         panel.add(new JLabel("Lịch sử khám bệnh - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createDatLichPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -552,35 +549,35 @@ public class MainFrame extends JFrame {
         panel.add(new JLabel("Bán hàng - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createAppointmentPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(new JLabel("Quản lý cuộc hẹn - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createKhamBenhPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(new JLabel("Khám bệnh - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createTiemPhongPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(new JLabel("Tiêm phòng - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createHoSoPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(new JLabel("Hồ sơ thú cưng - Đang phát triển...", SwingConstants.CENTER), BorderLayout.CENTER);
         return panel;
     }
-    
+
     private JPanel createBaoCaoPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
